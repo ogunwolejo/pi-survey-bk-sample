@@ -2,6 +2,9 @@
   "name": "pi-surveying-backend",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22.20.0"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "dev:worker": "tsx watch src/worker.ts",
@@ -31,7 +34,9 @@
     "@aws-sdk/s3-request-presigner": "^3.996.0",
     "@googlemaps/google-maps-services-js": "^3.4.2",
     "@prisma/adapter-pg": "^7.4.1",
-    "@prisma/client": "^7.4.1",
+    "@prisma/client": "^6.19.2",
+    "@prisma/extension-optimize": "^2.0.1",
+    "@prisma/instrumentation": "^6.19.2",
     "@sendgrid/client": "^8.1.6",
     "@sendgrid/mail": "^8.1.6",
     "archiver": "^7.0.1",
@@ -51,7 +56,6 @@
     "multer": "^1.4.5-lts.1",
     "pdf-lib": "^1.17.1",
     "pg": "^8.18.0",
-    "prisma": "^7.4.1",
     "quickbooks-node-promise": "^3.3.14",
     "socket.io": "^4.8.1",
     "uuid": "^11.0.3",
@@ -74,6 +78,7 @@
     "@types/web-push": "^3.6.4",
     "@vitest/coverage-v8": "2.1.9",
     "eslint": "^9.0.0",
+    "prisma": "^6.19.2",
     "tsx": "^4.19.2",
     "typescript": "^5.0.0",
     "vitest": "^2.1.8"
