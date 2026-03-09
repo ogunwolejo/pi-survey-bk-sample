@@ -1,0 +1,1706 @@
+// Pi Surveying Portal — Prisma Schema
+// Generated from specs/001-surveying-portal-mvp/data-model.md
+// Database: PostgreSQL 15+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// Enums
+// =============================================================================
+
+enum QuoteStatus {
+  draft
+  new
+  pending_review
+  quoted
+  sent
+  accepted
+  declined
+  expired
+}
+
+enum OrderStatus {
+  draft
+  new
+  pending_review
+  pending_contract
+  pending_payment
+  research_queued
+  research_in_progress
+  research_complete
+  ready_for_field
+}
+
+enum ResearchDocumentType {
+  plat_of_subdivision
+  sidwell_map
+  title_commitment
+  recorded_deed
+  legal_description
+  certificate_of_correction
+  order_form
+  other
+}
+
+enum JobStatus {
+  unassigned
+  assigned
+  in_progress
+  field_complete
+  ready_for_drafting
+  drafting
+  drafted
+  pls_review
+  awaiting_corrections
+  ready_for_delivery
+  complete
+}
+
+enum InvoiceStatus {
+  draft
+  sent
+  paid
+  partial
+  overdue
+  cancelled
+  refunded
+}
+
+enum SurveyType {
+  boundary
+  alta
+  condominium
+  topography
+  other
+}
+
+enum PaymentTerms {
+  pre_pay
+  fifty_fifty
+  full_with_discount
+  post_closing
+}
+
+enum ClientPaymentTerms {
+  pre_pay
+  post_closing
+  net_30
+  net_60
+}
+
+enum Priority {
+  low
+  normal
+  high
+  urgent
+}
+
+enum Team {
+  residential
+  public
+}
+
+enum UserTeam {
+  residential
+  public
+  both
+}
+
+enum UserRole {
+  super_admin
+  admin
+  office_manager
+  crew_manager
+  pls_reviewer
+  pls_assistant
+  field_crew
+  drafter
+  shipping_admin
+}
+
+enum RouteStatus {
+  draft
+  published
+  cancelled
+  completed
+}
+
+enum IssueFlagCategory {
+  data_issue
+  document_missing
+  boundary_discrepancy
+  other
+}
+
+enum IssueFlagSeverity {
+  critical
+  informational
+}
+
+enum IssueFlagStatus {
+  open
+  resolved
+}
+
+enum FileCategory {
+  field_data
+  field_sketch
+  legal_document
+  cad_draft
+  signed_survey
+  staking_points
+  other
+}
+
+enum PlatformAccess {
+  web
+  mobile
+  both
+}
+
+enum CustomerType {
+  homeowner
+  attorney
+  title_company
+  other
+}
+
+enum ClientSource {
+  order_form
+  quote_form
+  internal
+  imported
+}
+
+enum QuoteSource {
+  website
+  internal
+}
+
+enum OrderSource {
+  website
+  internal
+  quote_acceptance
+}
+
+enum OrderType {
+  standard
+  public_municipal
+}
+
+enum PropertyType {
+  sfr
+  sfr_townhome
+  apartment
+  commercial
+  vacant_land
+  farm
+  other
+}
+
+enum DeliveryPreference {
+  pdf_only
+  pdf_usps
+  pdf_fedex
+}
+
+enum LockedGates {
+  yes
+  no
+  na
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+  refunded
+  voided
+}
+
+enum PaymentMethod {
+  credit_card
+  ach
+  check
+  cash
+  other
+}
+
+enum PaymentSource {
+  quickbooks_payments
+  manual
+}
+
+enum PaymentType {
+  deposit
+  full
+  final
+  refund
+}
+
+enum QuoteTokenType {
+  legacy
+  proposal
+}
+
+enum OrderTokenType {
+  legacy
+  proposal
+}
+
+enum SyncStatus {
+  pending
+  synced
+  failed
+}
+
+enum FormType {
+  quote_request
+  direct_order
+  quote_acceptance
+}
+
+enum Carrier {
+  usps
+  fedex
+}
+
+enum ShippingTaskStatus {
+  pending
+  ready_to_ship
+  shipped
+}
+
+enum DeliveryChecklistStatus {
+  not_started
+  in_progress
+  complete
+}
+
+enum DeliveryTrackingStatus {
+  preparing
+  email_sent
+  shipping_label_printed
+  shipped
+  delivered
+}
+
+enum DeliveryLocation {
+  property
+  office
+}
+
+enum StakingRequestStatus {
+  pending
+  in_progress
+  completed
+  timed_out
+}
+
+enum CompanyType {
+  law_firm
+  title_company
+  other
+}
+
+enum AuditAction {
+  created
+  updated
+  deleted
+  restored
+}
+
+enum AuditSource {
+  web_portal
+  mobile_app
+  api
+  system
+}
+
+enum AuthMethod {
+  token_link
+  magic_link
+  otp
+}
+
+enum ChatEntityType {
+  quote
+  order
+  job
+}
+
+enum County {
+  cook
+  dupage
+  will
+  kane
+  lake
+  mchenry
+  kendall
+  dekalb
+  kankakee
+  iroquois
+  lasalle
+  grundy
+}
+
+enum LotShape {
+  regular_rectangular
+  irregular
+  many_sided
+  curved_boundary
+}
+
+enum DrivewayType {
+  standard_straight
+  u_shaped_horseshoe
+  long_curved
+  none
+}
+
+enum WaterFeatures {
+  none
+  pond_within_lot
+  boundary_water
+}
+
+enum VegetationDensity {
+  minimal
+  moderate
+  dense_obstructive
+}
+
+enum SubdivisionStatus {
+  recorded_plat
+  metes_and_bounds
+}
+
+enum QuoteCustomerType {
+  attorney_law_office
+  individual_homeowner
+  realtor
+  title_company
+  engineering_construction
+  architecture_firm
+  government_municipality
+  other
+}
+
+// =============================================================================
+// Models
+// =============================================================================
+
+model Quote {
+  id                     String       @id @default(uuid())
+  quoteNumber             String       @unique @map("quote_number")
+  status                 QuoteStatus  @default(new) @map("status")
+  clientId               String       @map("client_id")
+  billingClientId        String?      @map("billing_client_id")
+  propertyAddressLine1    String       @map("property_address_line_1")
+  propertyAddressLine2    String?      @map("property_address_line_2")
+  propertyCity           String       @map("property_city")
+  propertyState          String       @map("property_state")
+  propertyZip            String       @map("property_zip")
+  propertyCounty         County?      @map("property_county")
+  pin                    String       @map("pin")
+  additionalPins         String[]     @map("additional_pins")
+  surveyType             SurveyType?  @map("survey_type")
+  propertyType           PropertyType? @map("property_type")
+  closingDate            DateTime?    @db.Date @map("closing_date")
+  onsiteContactFirstName String?      @map("onsite_contact_first_name")
+  onsiteContactLastName  String?      @map("onsite_contact_last_name")
+  onsiteContactPhone     String?      @map("onsite_contact_phone")
+  lockedGates            LockedGates? @map("locked_gates")
+  deliveryPreference     DeliveryPreference? @map("delivery_preference")
+  legalDescription       String?      @map("legal_description")
+  price                  Decimal?     @map("price")
+  basePriceAtCreation    Decimal      @map("base_price_at_creation")
+  priceOverrideReason    String?      @map("price_override_reason")
+  estimatedTimeframe     String?      @map("estimated_timeframe")
+  paymentTerms           PaymentTerms? @map("payment_terms")
+  expiryDate             DateTime     @db.Date @map("expiry_date")
+  source                 QuoteSource  @map("source")
+  priority               Priority     @default(normal) @map("priority")
+  assignedTo             String?      @map("assigned_to")
+  internalNotes          String?      @map("internal_notes")
+  referralSource         String?      @map("referral_source")
+  customerType           QuoteCustomerType? @map("customer_type")
+  billingAddressSameAsService Boolean @default(true) @map("billing_address_same_as_service")
+  billingAddressLine1    String?      @map("billing_address_line_1")
+  billingAddressLine2    String?      @map("billing_address_line_2")
+  billingCity            String?      @map("billing_city")
+  billingState           String?      @map("billing_state")
+  billingZip             String?      @map("billing_zip")
+  team                   Team         @default(residential) @map("team")
+
+  // ── Property Research ────────────────────────────────────────────────────────
+  lotSizeAcres             Decimal?           @db.Decimal(10, 4) @map("lot_size_acres")
+  lotShape                 LotShape?          @map("lot_shape")
+  drivewayType             DrivewayType?      @map("driveway_type")
+  waterFeatures            WaterFeatures?     @map("water_features")
+  vegetationDensity        VegetationDensity? @map("vegetation_density")
+  subdivisionStatus        SubdivisionStatus? @map("subdivision_status")
+  structuresOnProperty     String[]           @map("structures_on_property")
+  structuresOther          String?            @map("structures_other")
+  accessIssues             String?            @map("access_issues")
+
+  // ── Rush Fee ─────────────────────────────────────────────────────────────────
+  rushFeeApplied           Boolean            @default(false) @map("rush_fee_applied")
+  rushFeeAmount            Decimal?           @db.Decimal(10, 2) @map("rush_fee_amount")
+  rushFeeWaived            Boolean            @default(false) @map("rush_fee_waived")
+  rushFeeWaivedReason      String?            @map("rush_fee_waived_reason")
+
+  // ── ALTA / Complex ────────────────────────────────────────────────────────────
+  altaTableASelections     Json?              @map("alta_table_a_selections")
+  preferenceFormSentAt     DateTime?          @map("preference_form_sent_at")
+  preferenceFormReceivedAt DateTime?          @map("preference_form_received_at")
+
+  // ── Price Breakdown ────────────────────────────────────────────────────────────
+  priceBreakdown           Json?              @map("price_breakdown")
+
+  // ── Pin Location (survey point marker) ────────────────────────────────────────
+  pinLatitude              Decimal?           @db.Decimal(10, 7) @map("pin_latitude")
+  pinLongitude             Decimal?           @db.Decimal(10, 7) @map("pin_longitude")
+
+  // ── Form Resume ───────────────────────────────────────────────────────────────
+  lastCompletedStep        Int?               @map("last_completed_step")
+
+  createdBy              String?      @map("created_by")
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedBy              String?      @map("updated_by")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+  deletedAt              DateTime?    @map("deleted_at")
+  deletedBy              String?      @map("deleted_by")
+
+  client                 Client       @relation("QuoteClient", fields: [clientId], references: [id])
+  billingClient          Client?      @relation("QuoteBillingClient", fields: [billingClientId], references: [id])
+  assignedToUser         User?        @relation("QuoteAssignedTo", fields: [assignedTo], references: [id])
+  createdByUser          User?        @relation("QuoteCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser          User?        @relation("QuoteUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser          User?        @relation("QuoteDeletedBy", fields: [deletedBy], references: [id])
+
+  paymentRequired        Boolean?       @map("payment_required")
+  paymentRequiredReason  String?        @map("payment_required_reason")
+
+  quoteTokens            QuoteToken[]
+  contractSignatures     ContractSignature[]
+  abandonedForms         AbandonedForm[]
+  order                  Order?
+  invoice                Invoice?
+  payments               Payment[]
+  activityEntries        QuoteActivityEntry[]
+
+  @@index([clientId])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([team, status])
+  @@index([propertyCounty])
+  @@index([customerType])
+  @@map("quotes")
+}
+
+model QuoteToken {
+  id        String         @id @default(uuid())
+  token     String         @unique @map("token")
+  quoteId   String         @map("quote_id")
+  tokenType QuoteTokenType @default(legacy) @map("token_type")
+  expiresAt DateTime       @map("expires_at")
+  usedAt    DateTime?      @map("used_at")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  quote     Quote          @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("quote_tokens")
+}
+
+model ContractSignature {
+  id             String    @id @default(uuid())
+  quoteId        String    @map("quote_id")
+  signerName     String    @map("signer_name")
+  signerEmail    String    @map("signer_email")
+  s3Key          String    @map("s3_key")
+  signatureData  Json?     @map("signature_data")
+  signedAt       DateTime  @map("signed_at")
+  ipAddress      String?   @db.Inet @map("ip_address")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  quote          Quote     @relation(fields: [quoteId], references: [id])
+
+  @@map("contract_signatures")
+}
+
+model OrderToken {
+  id        String         @id @default(uuid())
+  token     String         @unique @map("token")
+  orderId   String         @map("order_id")
+  tokenType OrderTokenType @default(proposal) @map("token_type")
+  expiresAt DateTime       @map("expires_at")
+  usedAt    DateTime?      @map("used_at")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_tokens")
+}
+
+model OrderContractSignature {
+  id             String    @id @default(uuid())
+  orderId        String    @map("order_id")
+  signerName     String    @map("signer_name")
+  signerEmail    String    @map("signer_email")
+  s3Key          String    @map("s3_key")
+  signatureData  Json?     @map("signature_data")
+  signedAt       DateTime  @map("signed_at")
+  ipAddress      String?   @db.Inet @map("ip_address")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  order          Order     @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@map("order_contract_signatures")
+}
+
+model AbandonedForm {
+  id          String    @id @default(uuid())
+  formType    FormType  @map("form_type")
+  email       String    @map("email")
+  partialData Json      @map("partial_data")
+  quoteId     String?   @map("quote_id")
+  abandonedAt DateTime  @map("abandoned_at")
+  recoveredAt DateTime? @map("recovered_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  quote       Quote?    @relation(fields: [quoteId], references: [id])
+
+  @@map("abandoned_forms")
+}
+
+model Order {
+  id                      String       @id @default(uuid())
+  orderNumber             String       @unique @map("order_number")
+  quoteId                 String?      @unique @map("quote_id")
+  clientId                String?      @map("client_id")
+  billingClientId         String?      @map("billing_client_id")
+  status                  OrderStatus  @default(draft) @map("status")
+  orderType               OrderType    @default(standard) @map("order_type")
+  propertyAddressLine1    String?      @map("property_address_line_1")
+  propertyAddressLine2    String?      @map("property_address_line_2")
+  propertyCity            String?      @map("property_city")
+  propertyState           String?      @map("property_state")
+  propertyZip             String?      @map("property_zip")
+  propertyCounty          County?      @map("property_county")
+  pin                     String?      @map("pin")
+  additionalPins          String[]     @map("additional_pins")
+  propertyType            PropertyType? @map("property_type")
+  surveyType              SurveyType?  @map("survey_type")
+  price                   Decimal?     @map("price")
+  paymentTerms            PaymentTerms? @map("payment_terms")
+  closingDate             DateTime?    @db.Date @map("closing_date")
+  requestedDate           DateTime?    @db.Date @map("requested_date")
+  onsiteContactFirstName  String?      @map("onsite_contact_first_name")
+  onsiteContactLastName   String?      @map("onsite_contact_last_name")
+  onsiteContactPhone     String?      @map("onsite_contact_phone")
+  lockedGates             LockedGates? @map("locked_gates")
+  deliveryPreference      DeliveryPreference? @map("delivery_preference")
+  legalDescription       String?      @map("legal_description")
+  titleCommitmentS3Key   String?      @map("title_commitment_s3_key")
+  dropDeadDate           DateTime?    @db.Date @map("drop_dead_date")
+  internalClosingDate    DateTime?    @db.Date @map("internal_closing_date")
+  dueDate                DateTime?    @db.Date @map("due_date")
+  isRush                 Boolean      @default(false) @map("is_rush")
+  rushFeeAmount          Decimal?     @db.Decimal(10, 2) @map("rush_fee_amount")
+  rushFeeWaived         Boolean      @default(false) @map("rush_fee_waived")
+  rushFeeWaivedReason    String?      @map("rush_fee_waived_reason")
+  source                 OrderSource? @map("source")
+  priority               Priority     @default(normal) @map("priority")
+  team                   Team?        @map("team")
+  suppressClientEmails   Boolean      @default(false) @map("suppress_client_emails")
+  internalNotes          String?      @map("internal_notes")
+  referralSource         String?      @map("referral_source")
+
+  // ── Property Research (mirrors Quote) ──────────────────────────────────────
+  lotSizeAcres             Decimal?           @db.Decimal(10, 4) @map("lot_size_acres")
+  lotShape                 LotShape?          @map("lot_shape")
+  drivewayType             DrivewayType?      @map("driveway_type")
+  waterFeatures            WaterFeatures?     @map("water_features")
+  vegetationDensity        VegetationDensity? @map("vegetation_density")
+  subdivisionStatus        SubdivisionStatus? @map("subdivision_status")
+  structuresOnProperty     String[]           @default([]) @map("structures_on_property")
+  structuresOther          String?            @map("structures_other")
+  accessIssues             String?            @map("access_issues")
+
+  // ── Pricing (standalone orders without a quote) ───────────────────────────
+  basePriceAtCreation      Decimal?           @map("base_price_at_creation")
+  priceBreakdown           Json?              @map("price_breakdown")
+  priceOverrideReason      String?            @map("price_override_reason")
+
+  // ── Pin Location (survey point marker) ────────────────────────────────────────
+  pinLatitude              Decimal?           @db.Decimal(10, 7) @map("pin_latitude")
+  pinLongitude             Decimal?           @db.Decimal(10, 7) @map("pin_longitude")
+
+  // ── Public Form Contact (stored on draft before Client record exists) ──────
+  firstName              String?      @map("first_name")
+  lastName               String?      @map("last_name")
+  email                  String?      @map("email")
+  phone                  String?      @map("phone")
+  company                String?      @map("company")
+  customerType           QuoteCustomerType? @map("customer_type")
+
+  // ── Progressive Save ───────────────────────────────────────────────────────
+  lastCompletedStep      Int          @default(0) @map("last_completed_step")
+
+  // ── Payment Requirement (resolved when sending standalone order to client) ─
+  paymentRequired            Boolean? @map("payment_required")
+  paymentRequiredReason      String?  @map("payment_required_reason")
+
+  // ── Denormalized Payment Tracking (updated atomically with payment writes) ─
+  amountPaid                 Decimal  @default(0) @db.Decimal(10, 2) @map("amount_paid")
+  balanceRemaining           Decimal  @default(0) @db.Decimal(10, 2) @map("balance_remaining")
+
+  // ── Billing Address ────────────────────────────────────────────────────────
+  billingAddressSameAsService Boolean @default(true) @map("billing_address_same_as_service")
+  billingAddressLine1    String?      @map("billing_address_line_1")
+  billingAddressLine2    String?      @map("billing_address_line_2")
+  billingCity            String?      @map("billing_city")
+  billingState           String?      @map("billing_state")
+  billingZip             String?      @map("billing_zip")
+
+  createdBy              String?      @map("created_by")
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedBy              String?      @map("updated_by")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+  deletedAt              DateTime?    @map("deleted_at")
+  deletedBy              String?      @map("deleted_by")
+
+  quote                  Quote?       @relation(fields: [quoteId], references: [id])
+  client                 Client?      @relation("OrderClient", fields: [clientId], references: [id])
+  billingClient          Client?      @relation("OrderBillingClient", fields: [billingClientId], references: [id])
+  createdByUser          User?       @relation("OrderCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser          User?       @relation("OrderUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser          User?       @relation("OrderDeletedBy", fields: [deletedBy], references: [id])
+
+  jobs                   Job[]
+  invoices               Invoice[]
+  payments               Payment[]
+  shippingTasks          ShippingTask[]
+  documentMetadata       DocumentMetadata[]
+  deliveryChecklist      DeliveryChecklist?
+  deliveryTracking       DeliveryTracking?
+  activityEntries        OrderActivityEntry[]
+  orderTokens            OrderToken[]
+  orderContractSignatures OrderContractSignature[]
+  researchFields         OrderResearchField[]
+
+  @@index([clientId])
+  @@index([quoteId])
+  @@index([status])
+  @@index([team, status])
+  @@index([dueDate])
+  @@map("orders")
+}
+
+model Job {
+  id              String    @id @default(uuid())
+  jobNumber       String    @unique @map("job_number")
+  orderId         String    @map("order_id")
+  status          JobStatus @default(unassigned) @map("status")
+  assignedCrewId  String?   @map("assigned_crew_id")
+  fieldDate       DateTime? @db.Date @map("field_date")
+  stakingRequired Boolean   @default(false) @map("staking_required")
+  team            Team      @map("team")
+
+  // Field Ops Pipeline fields
+  internalDueDate       DateTime?        @db.Date @map("internal_due_date")
+  propertyLat           Decimal?         @db.Decimal(10, 7) @map("property_lat")
+  propertyLng           Decimal?         @db.Decimal(10, 7) @map("property_lng")
+  propertyAddressLine1  String?          @map("property_address_line_1")
+  propertyAddressLine2  String?          @map("property_address_line_2")
+  propertyCity          String?          @map("property_city")
+  propertyState         String?          @map("property_state")
+  propertyZip           String?          @map("property_zip")
+  propertyCounty        County?          @map("property_county")
+  pin                   String?          @map("pin")
+  additionalPins        String[]         @default([]) @map("additional_pins")
+  claimedById           String?          @map("claimed_by_id")
+  claimedAt             DateTime?        @map("claimed_at")
+  plsReviewRoundTrips   Int              @default(0) @map("pls_review_round_trips")
+  isAlta                Boolean          @default(false) @map("is_alta")
+  complexityTag         String?          @map("complexity_tag")
+  specialNotes          String?          @map("special_notes")
+  lastStatusChangedAt   DateTime?        @map("last_status_changed_at")
+  lastStatusChangedById String?          @map("last_status_changed_by_id")
+
+  createdBy       String?   @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedBy       String?   @map("updated_by")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+  deletedBy       String?   @map("deleted_by")
+
+  order                Order     @relation(fields: [orderId], references: [id])
+  assignedCrew         Crew?     @relation(fields: [assignedCrewId], references: [id])
+  claimedBy            User?     @relation("JobClaimedBy", fields: [claimedById], references: [id])
+  lastStatusChangedBy  User?     @relation("JobLastStatusChangedBy", fields: [lastStatusChangedById], references: [id])
+  createdByUser        User?     @relation("JobCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser        User?     @relation("JobUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser        User?     @relation("JobDeletedBy", fields: [deletedBy], references: [id])
+
+  activityFeed         ActivityFeed[]
+  stakingRequests      StakingRequest[]
+  shippingTasks        ShippingTask[]
+  documentMetadata     DocumentMetadata[]
+  deliveryChecklist    DeliveryChecklist?
+  deliveryTracking     DeliveryTracking?
+  chatMessages         JobChatMessage[]
+  issueFlags           JobIssueFlag[]
+  plsSignOffs          PLSSignOff[]
+  routeJobs            RouteJob[]
+  payments             Payment[]
+
+  @@index([orderId])
+  @@index([assignedCrewId])
+  @@index([fieldDate])
+  @@index([assignedCrewId, fieldDate])
+  @@index([status, team])
+  @@index([internalDueDate])
+  @@index([claimedById])
+  @@map("jobs")
+}
+
+model Invoice {
+  id                    String        @id @default(uuid())
+  invoiceNumber         String        @unique @map("invoice_number")
+  orderId               String?       @map("order_id")
+  quoteId               String?       @unique @map("quote_id")
+  clientId              String        @map("client_id")
+  status                InvoiceStatus @default(draft) @map("status")
+  invoiceDate           DateTime      @db.Date @map("invoice_date")
+  dueDate               DateTime      @db.Date @map("due_date")
+  subtotal              Decimal       @map("subtotal")
+  taxRate               Decimal       @map("tax_rate")
+  taxAmount             Decimal       @map("tax_amount")
+  discountAmount        Decimal       @map("discount_amount")
+  creditApplied         Decimal       @map("credit_applied")
+  totalAmount           Decimal       @map("total_amount")
+  amountPaid            Decimal       @map("amount_paid")
+  balanceDue            Decimal       @map("balance_due")
+  taxExempt             Boolean       @default(false) @map("tax_exempt")
+  taxExemptCertificate  String?       @map("tax_exempt_certificate")
+  notes                 String?       @map("notes")
+  quickbooksInvoiceId   String?       @map("quickbooks_invoice_id")
+  syncStatus            SyncStatus    @default(pending) @map("sync_status")
+  createdBy             String?       @map("created_by")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedBy             String?       @map("updated_by")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  order                 Order?        @relation(fields: [orderId], references: [id])
+  quote                 Quote?        @relation(fields: [quoteId], references: [id])
+  client                Client        @relation(fields: [clientId], references: [id])
+  createdByUser         User?         @relation("InvoiceCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser         User?         @relation("InvoiceUpdatedBy", fields: [updatedBy], references: [id])
+
+  invoiceLineItems      InvoiceLineItem[]
+  payments              Payment[]
+  credits               Credit[]
+
+  @@index([orderId])
+  @@index([clientId])
+  @@index([status])
+  @@index([syncStatus])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id          String  @id @default(uuid())
+  invoiceId   String  @map("invoice_id")
+  description String  @map("description")
+  quantity    Int     @default(1) @map("quantity")
+  unitPrice   Decimal @map("unit_price")
+  amount      Decimal @map("amount")
+  sortOrder   Int     @map("sort_order")
+
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_line_items")
+}
+
+model Payment {
+  id                    String         @id @default(uuid())
+  paymentNumber         String         @unique @map("payment_number")
+  invoiceId             String?        @map("invoice_id")
+  quoteId               String?        @map("quote_id")
+  orderId               String?        @map("order_id")
+  jobId                 String?        @map("job_id")
+  status                PaymentStatus  @default(completed) @map("status")
+  paymentDate           DateTime       @map("payment_date")
+  amount                Decimal        @map("amount")
+  baseAmount            Decimal?       @map("base_amount")
+  taxAmount             Decimal?       @map("tax_amount")
+  processingFee         Decimal?       @map("processing_fee")
+  convenienceFee        Decimal?       @map("convenience_fee")
+  creditCardFee         Decimal?       @map("credit_card_fee")
+  paymentMethod         PaymentMethod  @map("payment_method")
+  cardBrand             String?        @map("card_brand")
+  cardLastFour          String?        @map("card_last_four")
+  checkNumber           String?        @map("check_number")
+  bankName              String?        @map("bank_name")
+  transactionId         String?        @map("transaction_id")
+  quickbooksPaymentId   String?        @unique @map("quickbooks_payment_id")
+  paymentSource         PaymentSource  @map("payment_source")
+  paymentType           PaymentType?   @map("payment_type")
+  recordedBy            String?        @map("recorded_by")
+  notes                 String?        @map("notes")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  completedAt           DateTime?      @map("completed_at")
+  failedAt              DateTime?      @map("failed_at")
+  failureReason         String?        @map("failure_reason")
+
+  invoice         Invoice?       @relation(fields: [invoiceId], references: [id])
+  quote           Quote?         @relation(fields: [quoteId], references: [id])
+  order           Order?         @relation(fields: [orderId], references: [id])
+  job             Job?           @relation(fields: [jobId], references: [id])
+  recordedByUser  User?          @relation(fields: [recordedBy], references: [id])
+
+  @@index([orderId])
+  @@index([jobId])
+  @@index([status])
+  @@index([paymentDate(sort: Desc)])
+  @@index([paymentNumber])
+  @@map("payments")
+}
+
+model Credit {
+  id          String    @id @default(uuid())
+  clientId    String    @map("client_id")
+  invoiceId   String?   @map("invoice_id")
+  amount      Decimal   @map("amount")
+  reason      String    @map("reason")
+  approvedBy  String    @map("approved_by")
+  approvedAt  DateTime  @map("approved_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  client      Client    @relation(fields: [clientId], references: [id])
+  invoice     Invoice?  @relation(fields: [invoiceId], references: [id])
+  approvedByUser User   @relation(fields: [approvedBy], references: [id])
+
+  @@map("credits")
+}
+
+model PaymentAuditLog {
+  id             String   @id @default(uuid())
+  userId         String?  @map("user_id")
+  userName       String   @map("user_name")
+  actionType     String   @map("action_type")
+  entityType     String   @map("entity_type")
+  entityId       String?  @map("entity_id")
+  entityNumber   String?  @map("entity_number")
+  metadata       Json?    @map("metadata")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user           User?    @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([actionType])
+  @@index([createdAt(sort: Desc)])
+  @@map("payment_audit_log")
+}
+
+model Client {
+  id                       String             @id @default(uuid())
+  firstName                String             @map("first_name")
+  lastName                 String             @map("last_name")
+  email                    String             @unique @map("email")
+  email2                   String?            @map("email_2")
+  phone                    String             @map("phone")
+  addressLine1            String?            @map("address_line_1")
+  addressLine2            String?            @map("address_line_2")
+  city                     String?            @map("city")
+  state                    String?            @map("state")
+  zipCode                  String?           @map("zip_code")
+  customerType             CustomerType       @map("customer_type")
+  paymentTerms             ClientPaymentTerms? @map("payment_terms")
+  preferredPaymentMethod   String?            @map("preferred_payment_method")
+  vip                      Boolean            @default(false) @map("vip")
+  creditLimit              Decimal?           @map("credit_limit")
+  communicationPreferences Json?              @map("communication_preferences")
+  operationalNotes         String?            @map("operational_notes")
+  source                   ClientSource       @map("source")
+  totalOrders              Int                @default(0) @map("total_orders")
+  lastOrderDate            DateTime?          @map("last_order_date")
+  createdBy                String?            @map("created_by")
+  createdAt                DateTime           @default(now()) @map("created_at")
+  updatedBy                String?            @map("updated_by")
+  updatedAt                DateTime           @updatedAt @map("updated_at")
+  deletedAt                DateTime?          @map("deleted_at")
+  deletedBy                String?            @map("deleted_by")
+
+  createdByUser            User?              @relation("ClientCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser            User?              @relation("ClientUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser            User?              @relation("ClientDeletedBy", fields: [deletedBy], references: [id])
+
+  quickbooksCustomerId     String?            @map("quickbooks_customer_id")
+
+  quotesAsClient           Quote[]            @relation("QuoteClient")
+  quotesAsBilling          Quote[]            @relation("QuoteBillingClient")
+  ordersAsClient           Order[]            @relation("OrderClient")
+  ordersAsBilling          Order[]            @relation("OrderBillingClient")
+  invoices                 Invoice[]
+  credits                  Credit[]
+  clientDeliveryPreferences ClientDeliveryPreference?
+  companyContacts          CompanyContact[]
+  clientPortalTokens       ClientPortalToken[]
+  clientPortalSessions     ClientPortalSession[]
+  shippingTasks            ShippingTask[]
+  magicLinkRequests        MagicLinkRequest[]
+
+  @@map("clients")
+}
+
+model ClientDeliveryPreference {
+  id                    String              @id @default(uuid())
+  clientId              String              @unique @map("client_id")
+  deliveryMethod        DeliveryPreference   @map("delivery_method")
+  mailingAddressLine1   String?             @map("mailing_address_line_1")
+  mailingAddressLine2   String?             @map("mailing_address_line_2")
+  mailingCity           String?             @map("mailing_city")
+  mailingState          String?             @map("mailing_state")
+  mailingZip            String?             @map("mailing_zip")
+  emailRecipients       String[]           @map("email_recipients")
+  ccRecipients          String[]           @map("cc_recipients")
+  chargeForShipping     Boolean            @default(false) @map("charge_for_shipping")
+  includePhysicalInvoice Boolean           @default(false) @map("include_physical_invoice")
+  deliveryLocation      DeliveryLocation?  @map("delivery_location")
+  specialInstructions   String?            @map("special_instructions")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+
+  client                Client             @relation(fields: [clientId], references: [id])
+
+  @@map("client_delivery_preferences")
+}
+
+model Company {
+  id                    String              @id @default(uuid())
+  name                  String              @map("name")
+  addressLine1          String?             @map("address_line_1")
+  addressLine2          String?             @map("address_line_2")
+  city                  String?             @map("city")
+  state                 String?             @map("state")
+  zipCode               String?             @map("zip_code")
+  type                  CompanyType         @map("type")
+  billingEmail          String?             @map("billing_email")
+  defaultPaymentTerms   ClientPaymentTerms? @map("default_payment_terms")
+  isOrt                 Boolean             @default(false) @map("is_ort")
+  notes                 String?             @map("notes")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+  deletedAt             DateTime?           @map("deleted_at")
+
+  companyContacts       CompanyContact[]
+
+  @@map("companies")
+}
+
+model CompanyContact {
+  id         String  @id @default(uuid())
+  companyId  String  @map("company_id")
+  clientId   String  @map("client_id")
+  role       String  @map("role")
+  isPrimary  Boolean @default(false) @map("is_primary")
+
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  client     Client  @relation(fields: [clientId], references: [id])
+
+  @@unique([companyId, clientId])
+  @@map("company_contacts")
+}
+
+// -----------------------------------------------------------------------------
+// User (Better Auth + staff fields)
+// Merged: Better Auth base (id, email, name, emailVerified, image) + staff fields
+// Configure Better Auth with: user: { modelName: "users", fields: { emailVerified: "email_verified" } }
+// -----------------------------------------------------------------------------
+model User {
+  id                     String           @id @default(uuid())
+  name                   String           @map("name")
+  email                  String           @unique @map("email")
+  emailVerified          Boolean          @default(false) @map("email_verified")
+  image                  String?          @map("image")
+  createdAt              DateTime         @default(now()) @map("created_at")
+  updatedAt              DateTime         @updatedAt @map("updated_at")
+
+  // Staff fields (internal portal users)
+  role                   UserRole         @map("role")
+  platformAccess         PlatformAccess   @map("platform_access")
+  team                   UserTeam         @default(residential) @map("team")
+  isActive               Boolean          @default(true) @map("is_active")
+  notificationPreferences Json?           @map("notification_preferences")
+  crewId                 String?          @map("crew_id")
+
+  crew                   Crew?            @relation(fields: [crewId], references: [id])
+  sessions               Session[]
+  accounts               Account[]
+
+  quotesAssignedTo       Quote[]          @relation("QuoteAssignedTo")
+  quotesCreatedBy        Quote[]          @relation("QuoteCreatedBy")
+  quotesUpdatedBy        Quote[]          @relation("QuoteUpdatedBy")
+  quotesDeletedBy        Quote[]          @relation("QuoteDeletedBy")
+  ordersCreatedBy        Order[]          @relation("OrderCreatedBy")
+  ordersUpdatedBy        Order[]          @relation("OrderUpdatedBy")
+  ordersDeletedBy        Order[]          @relation("OrderDeletedBy")
+  jobsCreatedBy          Job[]            @relation("JobCreatedBy")
+  jobsUpdatedBy          Job[]            @relation("JobUpdatedBy")
+  jobsDeletedBy          Job[]            @relation("JobDeletedBy")
+  invoicesCreatedBy      Invoice[]        @relation("InvoiceCreatedBy")
+  invoicesUpdatedBy      Invoice[]        @relation("InvoiceUpdatedBy")
+  paymentsRecordedBy     Payment[]
+  creditsApprovedBy      Credit[]
+  clientsCreatedBy       Client[]         @relation("ClientCreatedBy")
+  clientsUpdatedBy       Client[]         @relation("ClientUpdatedBy")
+  clientsDeletedBy       Client[]        @relation("ClientDeletedBy")
+  invitationsCreatedBy   Invitation[]
+  shippingTasksShippedBy  ShippingTask[]
+  deliveryChecklistsCompletedBy DeliveryChecklist[]
+  deliveryChecklistItemsConfirmedBy DeliveryChecklistItem[]
+  systemSettingsUpdatedBy SystemSetting[]
+  entityAuditLogs        EntityAuditLog[]
+  activityFeed           ActivityFeed[]
+  quoteActivityEntries   QuoteActivityEntry[]
+  orderActivityEntries   OrderActivityEntry[]
+  notifications          Notification[]
+  pushSubscriptions      PushSubscription[]
+  expoPushTokens         ExpoPushToken[]
+  stakingRequestsRequestedBy StakingRequest[] @relation("StakingRequestRequestedBy")
+  stakingRequestsRespondedBy StakingRequest[] @relation("StakingRequestRespondedBy")
+  documentMetadataUploadedBy DocumentMetadata[]
+
+  // Field Ops Pipeline relations
+  jobsClaimedBy          Job[]            @relation("JobClaimedBy")
+  jobsLastStatusChanged  Job[]            @relation("JobLastStatusChangedBy")
+  chatMessages           JobChatMessage[] @relation("JobChatMessageAuthor")
+  unifiedChatMessages    ChatMessage[]    @relation("ChatMessageAuthor")
+  issueFlagsRaised       JobIssueFlag[]   @relation("IssueFlagRaisedBy")
+  issueFlagsResolved     JobIssueFlag[]   @relation("IssueFlagResolvedBy")
+  plsSignOffs            PLSSignOff[]     @relation("PLSSignOffUser")
+  routesPublished        Route[]          @relation("RoutePublishedBy")
+  routesCreated          Route[]          @relation("RouteCreatedBy")
+
+  // Research relations
+  researchFieldsCreated  OrderResearchField[] @relation("ResearchFieldCreatedBy")
+
+  // Payment audit relations
+  paymentAuditLogs       PaymentAuditLog[]
+
+  @@index([crewId])
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// Better Auth: Session, Account, Verification
+// -----------------------------------------------------------------------------
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique @map("token")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?   @map("scope")
+  password              String?   @map("password")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(uuid())
+  identifier String    @map("identifier")
+  value      String    @map("value")
+  expiresAt  DateTime  @map("expires_at")
+  createdAt  DateTime? @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+
+  @@map("verification")
+}
+
+model Invitation {
+  id              String         @id @default(uuid())
+  token           String         @unique @map("token")
+  email           String         @map("email")
+  name            String         @map("name")
+  role            UserRole       @map("role")
+  platformAccess  PlatformAccess @map("platform_access")
+  team            UserTeam       @map("team")
+  expiresAt       DateTime       @map("expires_at")
+  createdBy       String         @map("created_by")
+  usedAt          DateTime?      @map("used_at")
+  crewId          String?        @map("crew_id")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  createdByUser   User           @relation(fields: [createdBy], references: [id])
+  crew            Crew?          @relation(fields: [crewId], references: [id])
+
+  @@map("invitations")
+}
+
+model Crew {
+  id                   String    @id @default(uuid())
+  crewNumber           Int       @unique @map("crew_number")
+  name                 String    @map("name")
+  startingLocationLat  Decimal?  @db.Decimal(10, 7) @map("starting_location_lat")
+  startingLocationLng  Decimal?  @db.Decimal(10, 7) @map("starting_location_lng")
+  capabilityTags       String[]  @map("capability_tags")
+  isActive             Boolean   @default(true) @map("is_active")
+  currentLat           Decimal?  @db.Decimal(10, 7) @map("current_lat")
+  currentLng           Decimal?  @db.Decimal(10, 7) @map("current_lng")
+  gpsUpdatedAt         DateTime? @map("gps_updated_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  jobs                 Job[]
+  members              User[]
+  invitations          Invitation[]
+  routes               Route[]
+
+  @@map("crews")
+}
+
+model ShippingTask {
+  id                    String             @id @default(uuid())
+  jobId                 String             @map("job_id")
+  orderId               String             @map("order_id")
+  clientId              String             @map("client_id")
+  status                ShippingTaskStatus @default(pending) @map("status")
+  carrier               Carrier            @map("carrier")
+  mailingAddressLine1   String             @map("mailing_address_line_1")
+  mailingAddressLine2   String?            @map("mailing_address_line_2")
+  mailingCity           String             @map("mailing_city")
+  mailingState          String             @map("mailing_state")
+  mailingZip            String             @map("mailing_zip")
+  recipientName         String             @map("recipient_name")
+  chargeForShipping     Boolean            @default(false) @map("charge_for_shipping")
+  includePhysicalInvoice Boolean          @default(false) @map("include_physical_invoice")
+  trackingNumber       String?            @map("tracking_number")
+  shippedAt             DateTime?          @map("shipped_at")
+  shippedBy             String?            @map("shipped_by")
+  notes                 String?            @map("notes")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+
+  job                  Job                @relation(fields: [jobId], references: [id])
+  order                Order              @relation(fields: [orderId], references: [id])
+  client               Client             @relation(fields: [clientId], references: [id])
+  shippedByUser        User?              @relation(fields: [shippedBy], references: [id])
+
+  @@map("shipping_tasks")
+}
+
+model DeliveryChecklist {
+  id              String                 @id @default(uuid())
+  orderId         String                 @unique @map("order_id")
+  jobId           String                 @unique @map("job_id")
+  deliveryMethod  DeliveryPreference      @map("delivery_method")
+  status         DeliveryChecklistStatus @default(not_started) @map("status")
+  startedAt      DateTime?              @map("started_at")
+  completedAt    DateTime?              @map("completed_at")
+  completedBy    String?                @map("completed_by")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  order          Order                  @relation(fields: [orderId], references: [id])
+  job            Job                    @relation(fields: [jobId], references: [id])
+  completedByUser User?                 @relation(fields: [completedBy], references: [id])
+
+  items          DeliveryChecklistItem[]
+
+  @@map("delivery_checklists")
+}
+
+model DeliveryChecklistItem {
+  id           String    @id @default(uuid())
+  checklistId String    @map("checklist_id")
+  stepKey      String    @map("step_key")
+  label        String    @map("label")
+  sortOrder    Int       @map("sort_order")
+  isRequired   Boolean   @default(true) @map("is_required")
+  isConfirmed  Boolean   @default(false) @map("is_confirmed")
+  confirmedBy  String?   @map("confirmed_by")
+  confirmedAt  DateTime? @map("confirmed_at")
+  notes        String?   @map("notes")
+
+  checklist    DeliveryChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  confirmedByUser User?          @relation(fields: [confirmedBy], references: [id])
+
+  @@unique([checklistId, stepKey])
+  @@map("delivery_checklist_items")
+}
+
+model DeliveryTracking {
+  id               String                @id @default(uuid())
+  orderId          String                @unique @map("order_id")
+  jobId            String                @unique @map("job_id")
+  trackingToken    String                @unique @default(uuid()) @map("tracking_token")
+  deliveryMethod   DeliveryPreference     @map("delivery_method")
+  status          DeliveryTrackingStatus @default(preparing) @map("status")
+  emailSentAt     DateTime?             @map("email_sent_at")
+  emailOpenedAt   DateTime?             @map("email_opened_at")
+  carrier         Carrier?               @map("carrier")
+  trackingNumber  String?               @map("tracking_number")
+  carrierUrl      String?               @map("carrier_url")
+  shippedAt       DateTime?             @map("shipped_at")
+  estimatedDelivery DateTime?          @db.Date @map("estimated_delivery")
+  deliveredAt     DateTime?             @map("delivered_at")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  order           Order                 @relation(fields: [orderId], references: [id])
+  job             Job                   @relation(fields: [jobId], references: [id])
+
+  events          DeliveryTrackingEvent[]
+
+  @@map("delivery_tracking")
+}
+
+model DeliveryTrackingEvent {
+  id          String   @id @default(uuid())
+  trackingId  String   @map("tracking_id")
+  status      String   @map("status")
+  title       String   @map("title")
+  description String?  @map("description")
+  occurredAt  DateTime @default(now()) @map("occurred_at")
+
+  tracking    DeliveryTracking @relation(fields: [trackingId], references: [id], onDelete: Cascade)
+
+  @@index([trackingId, occurredAt(sort: Desc)])
+  @@map("delivery_tracking_events")
+}
+
+model Holiday {
+  id        String   @id @default(uuid())
+  date      DateTime @unique @db.Date @map("date")
+  name      String   @map("name")
+  recurring Boolean  @default(false) @map("recurring")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("holidays")
+}
+
+model SystemSetting {
+  id          String    @id @default(uuid())
+  key         String    @unique @map("key")
+  value       Json      @map("value")
+  description String?   @map("description")
+  updatedBy   String?   @map("updated_by")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  updatedByUser User?   @relation(fields: [updatedBy], references: [id])
+
+  @@map("system_settings")
+}
+
+model EntityAuditLog {
+  id            String      @id @default(uuid())
+  entityType    String      @map("entity_type")
+  entityId      String      @map("entity_id")
+  entityNumber  String?     @map("entity_number")
+  action        AuditAction @map("action")
+  userId        String?     @map("user_id")
+  userName      String      @map("user_name")
+  changedAt     DateTime    @map("changed_at")
+  changes       Json        @map("changes")
+  changeSummary String      @map("change_summary")
+  ipAddress     String?     @db.Inet @map("ip_address")
+  userAgent     String?     @map("user_agent")
+  source        AuditSource @map("source")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  user          User?      @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([changedAt(sort: Desc)])
+  @@index([entityNumber])
+  @@map("entity_audit_log")
+}
+
+model ActivityFeed {
+  id        String   @id @default(uuid())
+  jobId     String   @map("job_id")
+  userId    String?  @map("user_id")
+  eventType String   @map("event_type")
+  content   String   @map("content")
+  metadata  Json?    @map("metadata")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([jobId, createdAt(sort: Desc)])
+  @@map("activity_feed")
+}
+
+model QuoteActivityEntry {
+  id        String   @id @default(uuid())
+  quoteId   String   @map("quote_id")
+  userId    String?  @map("user_id")
+  eventType String   @map("event_type")
+  content   String   @map("content")
+  metadata  Json?    @map("metadata")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  quote     Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([quoteId, createdAt(sort: Desc)])
+  @@map("quote_activity_entries")
+}
+
+model OrderActivityEntry {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  userId    String?  @map("user_id")
+  eventType String   @map("event_type")
+  content   String   @map("content")
+  metadata  Json?    @map("metadata")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([orderId, createdAt(sort: Desc)])
+  @@map("order_activity_entries")
+}
+
+model Notification {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  type       String    @map("type")
+  title      String    @map("title")
+  message    String    @map("message")
+  entityType String?   @map("entity_type")
+  entityId   String?   @map("entity_id")
+  isRead     Boolean   @default(false) @map("is_read")
+  readAt     DateTime? @map("read_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model ClientPortalToken {
+  id            String    @id @default(uuid())
+  token         String    @unique @map("token")
+  clientId      String    @map("client_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  lastAccessedAt DateTime? @map("last_accessed_at")
+  revokedAt     DateTime? @map("revoked_at")
+
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("client_portal_tokens")
+}
+
+model ClientPortalSession {
+  id           String     @id @default(uuid())
+  clientId     String     @map("client_id")
+  sessionToken String     @unique @map("session_token")
+  authMethod   AuthMethod @map("auth_method")
+  expiresAt    DateTime   @map("expires_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  client       Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("client_portal_sessions")
+}
+
+model MagicLinkRequest {
+  id        String    @id @default(uuid())
+  email     String    @map("email")
+  token     String    @unique @map("token")
+  clientId  String?   @map("client_id")
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  client    Client?   @relation(fields: [clientId], references: [id])
+
+  @@map("magic_link_requests")
+}
+
+model StakingRequest {
+  id           String               @id @default(uuid())
+  jobId        String               @map("job_id")
+  requestedBy  String               @map("requested_by")
+  status       StakingRequestStatus @default(pending) @map("status")
+  requestedAt  DateTime             @map("requested_at")
+  respondedAt  DateTime?            @map("responded_at")
+  respondedBy  String?              @map("responded_by")
+  timeoutAt    DateTime             @map("timeout_at")
+  notes        String?              @map("notes")
+  escalatedAt  DateTime?            @map("escalated_at")
+
+  job         Job                @relation(fields: [jobId], references: [id])
+  requestedByUser User            @relation("StakingRequestRequestedBy", fields: [requestedBy], references: [id])
+  respondedByUser User?          @relation("StakingRequestRespondedBy", fields: [respondedBy], references: [id])
+
+  @@map("staking_requests")
+}
+
+model DocumentMetadata {
+  id            String        @id @default(uuid())
+  jobId         String?       @map("job_id")
+  orderId       String?       @map("order_id")
+  documentType  String        @map("document_type")
+  filename      String        @map("filename")
+  displayName   String?       @map("display_name")
+  s3Key         String        @map("s3_key")
+  fileSize      BigInt        @map("file_size")
+  versionNumber Int           @default(1) @map("version_number")
+  uploadedBy    String?       @map("uploaded_by")
+  uploadedAt    DateTime      @map("uploaded_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  // Field Ops Pipeline fields
+  mimeType      String?       @map("mime_type")
+  fileCategory  FileCategory? @map("file_category")
+  chatMessageId String?       @map("chat_message_id")
+
+  // Research document classification
+  researchDocType ResearchDocumentType? @map("research_doc_type")
+
+  job           Job?          @relation(fields: [jobId], references: [id])
+  order         Order?        @relation(fields: [orderId], references: [id])
+  uploadedByUser User?        @relation(fields: [uploadedBy], references: [id])
+  chatMessage   JobChatMessage? @relation(fields: [chatMessageId], references: [id])
+
+  @@map("document_metadata")
+}
+
+model OrderResearchField {
+  id         String   @id @default(uuid())
+  orderId    String   @map("order_id")
+  fieldName  String   @map("field_name")
+  fieldValue String   @map("field_value")
+  createdBy  String?  @map("created_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  order         Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdByUser User?  @relation("ResearchFieldCreatedBy", fields: [createdBy], references: [id])
+
+  @@unique([orderId, fieldName])
+  @@index([orderId])
+  @@map("order_research_fields")
+}
+
+// =============================================================================
+// Field Ops Pipeline Models
+// =============================================================================
+
+model Route {
+  id                    String      @id @default(uuid())
+  routeDate             DateTime    @db.Date @map("route_date")
+  crewId                String      @map("crew_id")
+  status                RouteStatus @default(draft) @map("status")
+  totalDriveTimeMinutes Int?        @map("total_drive_time_minutes")
+  totalDistanceMeters   Int?        @map("total_distance_meters")
+  directionsPolyline    String?     @map("directions_polyline")
+  publishedAt           DateTime?   @map("published_at")
+  publishedById         String?     @map("published_by_id")
+  cancelledAt           DateTime?   @map("cancelled_at")
+  cancelReason          String?     @map("cancel_reason")
+  notificationJobId     String?     @map("notification_job_id")
+  createdBy             String?     @map("created_by")
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+
+  crew                  Crew        @relation(fields: [crewId], references: [id])
+  publishedBy           User?       @relation("RoutePublishedBy", fields: [publishedById], references: [id])
+  createdByUser         User?       @relation("RouteCreatedBy", fields: [createdBy], references: [id])
+  routeJobs             RouteJob[]
+
+  @@unique([crewId, routeDate])
+  @@index([routeDate])
+  @@index([status])
+  @@map("routes")
+}
+
+model RouteJob {
+  id                        String    @id @default(uuid())
+  routeId                   String    @map("route_id")
+  jobId                     String    @map("job_id")
+  sortOrder                 Int       @map("sort_order")
+  estimatedArrival          DateTime? @map("estimated_arrival")
+  estimatedDurationMinutes  Int?      @map("estimated_duration_minutes")
+  legDriveTimeMinutes       Int?      @map("leg_drive_time_minutes")
+  legDistanceMeters         Int?      @map("leg_distance_meters")
+  siteAccessEmailJobId      String?   @map("site_access_email_job_id")
+  siteContactName           String?   @map("site_contact_name")
+  siteContactEmail          String?   @map("site_contact_email")
+  siteContactPhone          String?   @map("site_contact_phone")
+
+  route                     Route     @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  job                       Job       @relation(fields: [jobId], references: [id])
+
+  @@unique([routeId, sortOrder])
+  @@index([jobId])
+  @@map("route_jobs")
+}
+
+model JobChatMessage {
+  id               String    @id @default(uuid())
+  jobId            String    @map("job_id")
+  authorId         String?   @map("author_id")
+  content          String    @map("content")
+  mentionedUserIds String[]  @map("mentioned_user_ids")
+  isSystemEvent    Boolean   @default(false) @map("is_system_event")
+  metadata         Json?     @map("metadata")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  editedAt         DateTime? @map("edited_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  job              Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  author           User?     @relation("JobChatMessageAuthor", fields: [authorId], references: [id])
+  attachments      DocumentMetadata[]
+
+  @@index([jobId, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@map("job_chat_messages")
+}
+
+model JobIssueFlag {
+  id             String            @id @default(uuid())
+  jobId          String            @map("job_id")
+  category       IssueFlagCategory @map("category")
+  severity       IssueFlagSeverity @map("severity")
+  description    String            @map("description")
+  status         IssueFlagStatus   @default(open) @map("status")
+  raisedById     String            @map("raised_by_id")
+  raisedAt       DateTime          @default(now()) @map("raised_at")
+  resolvedById   String?           @map("resolved_by_id")
+  resolvedAt     DateTime?         @map("resolved_at")
+  resolutionNote String?           @map("resolution_note")
+
+  job            Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  raisedBy       User              @relation("IssueFlagRaisedBy", fields: [raisedById], references: [id])
+  resolvedBy     User?             @relation("IssueFlagResolvedBy", fields: [resolvedById], references: [id])
+
+  @@index([jobId, status])
+  @@map("job_issue_flags")
+}
+
+model PLSSignOff {
+  id          String    @id @default(uuid())
+  jobId       String    @map("job_id")
+  plsUserId   String    @map("pls_user_id")
+  approvedAt  DateTime  @default(now()) @map("approved_at")
+  notes       String?   @map("notes")
+
+  job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  plsUser     User      @relation("PLSSignOffUser", fields: [plsUserId], references: [id])
+
+  @@index([jobId])
+  @@map("pls_sign_offs")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  endpoint  String   @map("endpoint")
+  p256dh    String   @map("p256dh")
+  auth      String   @map("auth")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+model ExpoPushToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @map("token")
+  deviceId  String?  @map("device_id")
+  platform  String?  @map("platform")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, token])
+  @@index([userId])
+  @@map("expo_push_tokens")
+}
+
+model ChatMessage {
+  id               String         @id @default(uuid())
+  entityType       ChatEntityType @map("entity_type")
+  entityId         String         @map("entity_id")
+  authorId         String?        @map("author_id")
+  content          String         @map("content") @db.VarChar(5000)
+  mentionedUserIds String[]       @map("mentioned_user_ids")
+  isSystemEvent    Boolean        @default(false) @map("is_system_event")
+  eventType        String?        @map("event_type")
+  metadata         Json?          @map("metadata")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  editedAt         DateTime?      @map("edited_at")
+  deletedAt        DateTime?      @map("deleted_at")
+
+  author           User?          @relation("ChatMessageAuthor", fields: [authorId], references: [id])
+
+  @@index([entityType, entityId, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@map("chat_messages")
+}
+
+model QuickBooksToken {
+  id                      String   @id @default(uuid())
+  realmId                 String   @unique @map("realm_id")
+  accessToken             String   @map("access_token")
+  refreshToken            String   @map("refresh_token")
+  accessTokenExpiresAt    DateTime @map("access_token_expires_at")
+  refreshTokenExpiresAt   DateTime @map("refresh_token_expires_at")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  @@map("quickbooks_tokens")
+}

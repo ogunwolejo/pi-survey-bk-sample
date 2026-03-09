@@ -1,0 +1,107 @@
+export enum AppEnv {
+  LOCAL = "local",
+  DEVELOPMENT = "development",
+  STAGING = "staging",
+  PRODUCTION = "production",
+  TEST = "test",
+}
+
+export enum DcsEnv {
+  DEV = "dev",
+  STAGING = "staging",
+  PROD = "production",
+}
+
+export const OPTIONAL_ENVS: (keyof EnvStore)[] = [
+  "PORT",
+  "DB_HOST",
+  "DB_PORT",
+  "DB_USERNAME",
+  "DB_PASSWORD",
+  "DB_NAME",
+  "REDIS_HOST",
+  "REDIS_PORT",
+  "AWS_ACCESS_KEY_ID",
+  "AWS_SECRET_ACCESS_KEY",
+  "CUSTOMERIO_SITE_ID",
+  "CUSTOMERIO_API_KEY",
+  "QUICKBOOKS_CLIENT_ID",
+  "QUICKBOOKS_CLIENT_SECRET",
+  "QUICKBOOKS_REALM_ID",
+  "QUICKBOOKS_REDIRECT_URL",
+  "GOOGLE_MAPS_API_KEY",
+  "STAGING_TRAP_EMAIL",
+  "STAGING_TRAP_EXCLUDED_EMAILS",
+  "MOBILE_SCHEME",
+  "SENTRY_DSN",
+  "SENDGRID_MAGIC_LINK_TEMPLATE_ID",
+  "SENDGRID_OTP_TEMPLATE_ID",
+  "HOLLY_EMAIL",
+  "RESEARCH_LEADER_EMAIL",
+  "ALEX_EMAIL",
+  "VAPID_PUBLIC_KEY",
+  "VAPID_PRIVATE_KEY",
+  "VAPID_SUBJECT",
+  "QUICKBOOKS_WEBHOOK_VERIFIER_TOKEN",
+];
+
+export interface EnvStore {
+  NODE_ENV: string;
+
+  DATABASE_URL: string;
+  REDIS_URL: string;
+
+  DB_HOST: string;
+  DB_PORT: string;
+  DB_USERNAME: string;
+  DB_PASSWORD: string;
+  DB_NAME: string;
+
+  REDIS_HOST: string;
+  REDIS_PORT: string;
+
+  JWT_SECRET: string;
+  JWT_EXPIRY: string;
+  REFRESH_TOKEN_EXPIRY: string;
+
+  AWS_S3_BUCKET: string;
+  AWS_ACCESS_KEY_ID: string;
+  AWS_SECRET_ACCESS_KEY: string;
+  AWS_REGION: string;
+
+  SENDGRID_API_KEY: string;
+  SENDGRID_FROM_EMAIL: string;
+  SENDGRID_FROM_NAME: string;
+  SENDGRID_MAGIC_LINK_TEMPLATE_ID: string;
+  SENDGRID_OTP_TEMPLATE_ID: string;
+
+  CUSTOMERIO_SITE_ID: string;
+  CUSTOMERIO_API_KEY: string;
+  CUSTOMERIO_REGION: string;
+
+  QUICKBOOKS_CLIENT_ID: string;
+  QUICKBOOKS_CLIENT_SECRET: string;
+  QUICKBOOKS_REALM_ID: string;
+  QUICKBOOKS_ENVIRONMENT: string;
+  QUICKBOOKS_REDIRECT_URL: string;
+
+  GOOGLE_MAPS_API_KEY: string;
+
+  FRONTEND_URL: string;
+  MOBILE_SCHEME: string;
+
+  PORT: string;
+
+  STAGING_TRAP_EMAIL: string;
+  STAGING_TRAP_EXCLUDED_EMAILS: string;
+
+  SENTRY_DSN: string;
+
+  HOLLY_EMAIL: string;
+  RESEARCH_LEADER_EMAIL: string;
+  ALEX_EMAIL: string;
+  VAPID_PUBLIC_KEY: string;
+  VAPID_PRIVATE_KEY: string;
+  VAPID_SUBJECT: string;
+  QUICKBOOKS_WEBHOOK_VERIFIER_TOKEN: string;
+}

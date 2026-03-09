@@ -1,0 +1,15 @@
+node_modules
+dist
+.env*
+!.env.example
+*.md
+__tests__
+coverage
+.git
+.gitignore
+.specify
+specs
+.husky
+.lintstagedrc.json
+*.test.ts
+*.spec.ts

@@ -1,0 +1,23 @@
+export const ROOM_PREFIXES = {
+  DASHBOARD_QUOTES: "dashboard:quotes",
+  DASHBOARD_ORDERS: "dashboard:orders",
+  DASHBOARD_JOBS: "dashboard:jobs",
+  DASHBOARD_PAYMENTS: "dashboard:payments",
+  DASHBOARD_SHIPPING: "dashboard:shipping",
+  DASHBOARD_CONTACTS: "dashboard:contacts",
+  JOB: (id: string) => `job:${id}`,
+  ORDER: (id: string) => `order:${id}`,
+  QUOTE: (id: string) => `quote:${id}`,
+  USER: (id: string) => `user:${id}`,
+  PAYMENT: (id: string) => `payment:${id}`,
+  STAKING: (jobId: string) => `staking:${jobId}`,
+  TRACKING: (token: string) => `tracking:${token}`,
+  DELIVERY: (orderId: string) => `delivery:${orderId}`,
+  // Field Ops Pipeline
+  PIPELINE_BOARD: "pipeline:board",
+  JOB_CHAT: (jobId: string) => `job:chat:${jobId}`,
+  ENTITY_CHAT: (entityType: string, entityId: string) => `chat:${entityType}:${entityId}`,
+  DASHBOARD_ACTIVE_JOBS: "dashboard:active-jobs",
+  DASHBOARD_FIELD_TRACKING: "dashboard:field-tracking",
+  DASHBOARD_CAPACITY: "dashboard:capacity",
+} as const;
