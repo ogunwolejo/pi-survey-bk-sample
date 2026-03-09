@@ -52,7 +52,6 @@
     "pdf-lib": "^1.17.1",
     "pg": "^8.18.0",
     "prisma": "^7.4.1",
-    "@prisma/client": "^7.4.1",
     "quickbooks-node-promise": "^3.3.14",
     "socket.io": "^4.8.1",
     "uuid": "^11.0.3",
