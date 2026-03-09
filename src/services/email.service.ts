@@ -31,6 +31,8 @@ interface BaseEmailOptions {
   replyTo?: EmailRecipient;
   subject: string;
   customArgs?: Record<string, string>;
+  /** When true, bypass the staging email trap and send to the real address. */
+  skipTrap?: boolean;
 }
 
 export interface PlainEmailOptions extends BaseEmailOptions {
@@ -115,9 +117,10 @@ function shouldSkipSend(): boolean {
  * The staging trap is applied automatically to all recipients.
  */
 export async function sendEmail(opts: PlainEmailOptions): Promise<string | null> {
-  const to = trapRecipients(normaliseList(opts.to));
-  const cc = trapRecipients(normaliseList(opts.cc));
-  const bcc = trapRecipients(normaliseList(opts.bcc));
+  const trap = opts.skipTrap ? (r: EmailRecipient[] | undefined) => r : trapRecipients;
+  const to = trap(normaliseList(opts.to));
+  const cc = trap(normaliseList(opts.cc));
+  const bcc = trap(normaliseList(opts.bcc));
   const from = opts.from ?? defaultFrom();
 
   if (shouldSkipSend()) {
@@ -271,6 +274,7 @@ export async function sendMagicLinkEmail(
     to: email,
     subject,
     html: magicLinkEmailHtml(magicLinkUrl, purpose),
+    skipTrap: true,
   });
 }
 
@@ -297,6 +301,7 @@ export async function sendOtpEmail(
     to: email,
     subject,
     html: otpEmailHtml(code, purpose),
+    skipTrap: true,
   });
 }
 

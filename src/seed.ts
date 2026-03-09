@@ -106,29 +106,12 @@ export async function runSeed(): Promise<void> {
       seedLog(`Created super admin: ${superAdminEmail}`);
     }
 
-    // Employee accounts (admin + office_manager + crew roles)
-    const isProduction = process.env.NODE_ENV === "production";
-    const seedEmployees = process.env.SEED_EMPLOYEES === "true";
-
-    if (!isProduction || seedEmployees) {
+    // Employee accounts (admin + office_manager + crew roles) — always seeded
+    {
       const password = process.env.SEED_EMPLOYEE_PASSWORD ?? "Password123!";
       const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
       const employees = [
-        {
-          name: "Admin User",
-          email: "admin@pisurveying.com",
-          role: UserRole.admin,
-          platformAccess: PlatformAccess.both,
-          team: UserTeam.both,
-        },
-        {
-          name: "Office Manager",
-          email: "officemanager@pisurveying.com",
-          role: UserRole.office_manager,
-          platformAccess: PlatformAccess.web,
-          team: UserTeam.residential,
-        },
         {
           name: "Holly Mitchell",
           email: "holly@pisurveying.com",
@@ -202,8 +185,6 @@ export async function runSeed(): Promise<void> {
           }
         }
       }
-    } else {
-      seedLog("Skipping employee seed (NODE_ENV=production without SEED_EMPLOYEES=true)");
     }
   } finally {
     await prisma.$disconnect();

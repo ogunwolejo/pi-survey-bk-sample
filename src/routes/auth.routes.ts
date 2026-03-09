@@ -166,48 +166,28 @@ router.post(
   validateBody(requestOtpSchema),
   async (req, res) => {
     try {
-      const dbUrl = envStore.DATABASE_URL;
-      try {
-        const parsed = new URL(dbUrl);
-        console.log("[OTP-DEBUG] DATABASE_URL →", {
-          host: parsed.hostname,
-          port: parsed.port,
-          database: parsed.pathname,
-          user: parsed.username,
-          passwordSet: !!parsed.password,
-        });
-      } catch {
-        console.log("[OTP-DEBUG] DATABASE_URL invalid:", dbUrl?.slice(0, 30) + "…");
-      }
-
       const { email, platform } = req.body as z.infer<typeof requestOtpSchema>;
 
+      // Always generate and send OTP — user will be auto-created on verify if needed
       const user = await authService.findUserByEmail(email);
 
-      if (user?.isActive) {
-        const platformOk =
-          user.platformAccess === "both" || user.platformAccess === platform;
+      await verificationService.createOtp({
+        email,
+        userId: user?.id ?? null,
+        method: "otp",
+        purpose: "signin",
+      });
 
-        if (platformOk) {
-          await verificationService.createOtp({
-            email,
-            userId: user.id,
-            method: "otp",
-            purpose: "signin",
-          });
-
-          const code = await verificationService.getOtpCode(email);
-          if (code) {
-            await sendOtpEmail(email, code, "signin").catch((err) => {
-              logger.error("[Auth] Failed to send OTP email", { error: String(err), email });
-            });
-          }
-        }
+      const code = await verificationService.getOtpCode(email);
+      if (code) {
+        await sendOtpEmail(email, code, "signin").catch((err) => {
+          logger.error("[Auth] Failed to send OTP email", { error: String(err), email });
+        });
       }
 
-      logger.info("OTP sign-in request processed", { email });
+      logger.info("OTP sign-in request processed", { email, existingUser: !!user });
       sendSuccess(res, {
-        message: "If an account exists for this email, a verification code has been sent.",
+        message: "A verification code has been sent to your email.",
         expiresInSeconds: 600,
       });
     } catch (err) {
@@ -236,7 +216,8 @@ router.post(
         return;
       }
 
-      const session = await authService.createSessionForUser(result.email, platform);
+      // Auto-create user with admin role if they don't exist
+      const session = await authService.findOrCreateAndLogin(result.email, platform);
       logger.info("OTP verified, session created", { email: result.email, platform });
       sendSuccess(res, session);
     } catch (err) {

@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, UserRole, PlatformAccess, UserTeam } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { envStore } from "../env-store";
@@ -72,6 +72,46 @@ export async function createSessionForUser(
   const expiresAt = new Date(Date.now() + JWT_EXPIRY_MS);
   logger.info("Session created successfully", { userId: user.id, email, platform });
   return { user, session: { token, expiresAt } };
+}
+
+// ─── findOrCreateAndLogin ────────────────────────────────────────────────────
+// If user doesn't exist, auto-create with admin role (for OTP-based sign-in).
+
+export async function findOrCreateAndLogin(
+  email: string,
+  platform?: "web" | "mobile",
+): Promise<{ user: object; session: { token: string; expiresAt: Date } }> {
+  let user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user) {
+    logger.info("User not found — auto-creating with admin role", { email });
+    user = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          email,
+          name: email.split("@")[0] ?? email,
+          role: UserRole.admin,
+          platformAccess: PlatformAccess.both,
+          team: UserTeam.both,
+          isActive: true,
+          emailVerified: true,
+        },
+      });
+
+      await tx.account.create({
+        data: {
+          accountId: newUser.id,
+          providerId: "credential",
+          userId: newUser.id,
+        },
+      });
+
+      return newUser;
+    });
+    logger.info("Auto-created admin user", { userId: user.id, email });
+  }
+
+  return createSessionForUser(email, platform);
 }
 
 // ─── completeInvitationSetup ─────────────────────────────────────────────────

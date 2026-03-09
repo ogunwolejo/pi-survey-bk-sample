@@ -21,8 +21,7 @@ function isProductionEnv(): boolean {
 }
 
 function shouldSeed(): boolean {
-  if (!isProductionEnv()) return true;
-  return process.env.SEED_EMPLOYEES === "true";
+  return true;
 }
 
 async function runMigration(): Promise<void> {
