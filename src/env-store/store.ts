@@ -1,5 +1,4 @@
-import { SSMClient, GetParametersCommand } from "@aws-sdk/client-ssm";
-import { AppEnv, DcsEnv, OPTIONAL_ENVS, type EnvStore } from "./types";
+import { AppEnv, OPTIONAL_ENVS, type EnvStore } from "./types";
 
 const envStore: EnvStore = {
   NODE_ENV: "",
@@ -62,67 +61,6 @@ const envStore: EnvStore = {
   QUICKBOOKS_WEBHOOK_VERIFIER_TOKEN: "",
 };
 
-async function setEnvStoreFromSSM(): Promise<void> {
-  let ssmPrefix = "/projects/pisurveying/dev";
-  const dcsEnv = process.env.DCS_ENV;
-
-  if (dcsEnv === DcsEnv.PROD) {
-    ssmPrefix = "/projects/pisurveying/production";
-  } else if (dcsEnv === DcsEnv.STAGING) {
-    ssmPrefix = "/projects/pisurveying/staging";
-  }
-
-  const ssm = new SSMClient({ region: process.env.AWS_REGION || "us-east-1" });
-  const allNames = Object.keys(envStore).map((k) => `${ssmPrefix}/${k}`);
-  const batchCount = Math.ceil(allNames.length / 10);
-
-  console.log(
-    `[env-store] Loading ${allNames.length} parameters from SSM (prefix: ${ssmPrefix}, ${batchCount} batches)...`,
-  );
-  const ssmStart = Date.now();
-
-  const fetchPromises: Promise<{ params: Array<{ name: string; value: string }> }>[] = [];
-  for (let i = 0; i < allNames.length; i += 10) {
-    const batch = allNames.slice(i, i + 10);
-    fetchPromises.push(
-      ssm
-        .send(new GetParametersCommand({ Names: batch, WithDecryption: true }))
-        .then((result) => ({
-          params: (result.Parameters ?? [])
-            .filter((p) => p.Name && p.Value)
-            .map((p) => ({ name: p.Name!, value: p.Value! })),
-        })),
-    );
-  }
-
-  const results = await Promise.all(fetchPromises);
-  const parsed: Record<string, string> = {};
-  for (const r of results) {
-    for (const p of r.params) {
-      parsed[p.name.replace(`${ssmPrefix}/`, "")] = p.value;
-    }
-  }
-
-  let loadedCount = 0;
-  for (const k of Object.keys(envStore) as (keyof EnvStore)[]) {
-    if (parsed[k]) {
-      envStore[k] = parsed[k]!;
-      loadedCount++;
-    }
-  }
-
-  const ssmDuration = Date.now() - ssmStart;
-  const loadedKeys = Object.keys(envStore).filter((k) => parsed[k]);
-  const missingKeys = Object.keys(envStore).filter((k) => !parsed[k]);
-  console.log(
-    `[env-store] SSM loading complete — ${loadedCount}/${allNames.length} parameters loaded in ${ssmDuration}ms`,
-  );
-  console.log(`[env-store] SSM loaded: ${loadedKeys.join(", ") || "(none)"}`);
-  if (missingKeys.length > 0) {
-    console.warn(`[env-store] SSM missing (will use defaults/env): ${missingKeys.join(", ")}`);
-  }
-}
-
 function setEnvStoreFromEnvironment(): void {
   for (const key of Object.keys(envStore) as (keyof EnvStore)[]) {
     const value = process.env[key];
@@ -151,20 +89,10 @@ function buildConnectionUrls(): void {
 
 export async function configureEnv(): Promise<void> {
   const configStart = Date.now();
-  const dcsEnv = process.env.DCS_ENV;
 
   console.log(
-    `[env-store] Configuring environment (DCS_ENV=${dcsEnv ?? "unset"}, NODE_ENV=${process.env.NODE_ENV ?? "unset"})...`,
+    `[env-store] Configuring environment (NODE_ENV=${process.env.NODE_ENV ?? "unset"})...`,
   );
-
-  if (
-    dcsEnv &&
-    [DcsEnv.DEV, DcsEnv.STAGING, DcsEnv.PROD].includes(dcsEnv as DcsEnv)
-  ) {
-    await setEnvStoreFromSSM();
-  } else {
-    console.log("[env-store] Skipping SSM — no DCS_ENV set, using local environment");
-  }
 
   if (process.env.NODE_ENV === AppEnv.TEST) {
     for (const key of Object.keys(envStore) as (keyof EnvStore)[]) {

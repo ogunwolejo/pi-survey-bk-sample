@@ -30,7 +30,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.996.0",
-    "@aws-sdk/client-ssm": "^3.998.0",
     "@aws-sdk/s3-request-presigner": "^3.996.0",
     "@googlemaps/google-maps-services-js": "^3.4.2",
     "@prisma/adapter-pg": "^7.4.1",
