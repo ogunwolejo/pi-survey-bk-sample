@@ -89,10 +89,15 @@ export async function runSeed(): Promise<void> {
     }
     seedLog(`Upserted ${settings.length} system settings`);
 
-    // Super admin user
-    const superAdminEmail = process.env.SEED_ADMIN_EMAIL ?? "superadmin@pisurveying.com";
-    const existingSuperAdmin = await prisma.user.findUnique({ where: { email: superAdminEmail } });
-    if (!existingSuperAdmin) {
+    // Seed users (super admin + employees) only when database has no users yet
+    const userCount = await prisma.user.count();
+    if (userCount > 0) {
+      seedLog(`Skipping user seed — ${userCount} user(s) already exist`);
+    } else {
+      seedLog("No users found — seeding super admin and employees...");
+
+      // Super admin
+      const superAdminEmail = process.env.SEED_ADMIN_EMAIL ?? "superadmin@pisurveying.com";
       await prisma.user.create({
         data: {
           name: "Super Admin",
@@ -104,10 +109,8 @@ export async function runSeed(): Promise<void> {
         },
       });
       seedLog(`Created super admin: ${superAdminEmail}`);
-    }
 
-    // Employee accounts (admin + office_manager + crew roles) — always seeded
-    {
+      // Employee accounts
       const password = process.env.SEED_EMPLOYEE_PASSWORD ?? "Password123!";
       const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
@@ -143,47 +146,28 @@ export async function runSeed(): Promise<void> {
       ];
 
       for (const emp of employees) {
-        const existing = await prisma.user.findUnique({ where: { email: emp.email } });
+        const user = await prisma.user.create({
+          data: {
+            name: emp.name,
+            email: emp.email,
+            role: emp.role,
+            platformAccess: emp.platformAccess,
+            team: emp.team,
+            isActive: true,
+            emailVerified: true,
+          },
+        });
 
-        if (!existing) {
-          const user = await prisma.user.create({
-            data: {
-              name: emp.name,
-              email: emp.email,
-              role: emp.role,
-              platformAccess: emp.platformAccess,
-              team: emp.team,
-              isActive: true,
-              emailVerified: true,
-            },
-          });
+        await prisma.account.create({
+          data: {
+            accountId: user.id,
+            providerId: "credential",
+            userId: user.id,
+            password: hashedPassword,
+          },
+        });
 
-          await prisma.account.create({
-            data: {
-              accountId: user.id,
-              providerId: "credential",
-              userId: user.id,
-              password: hashedPassword,
-            },
-          });
-
-          seedLog(`Created employee: ${emp.email} (${emp.role})`);
-        } else {
-          const account = await prisma.account.findFirst({
-            where: { userId: existing.id, providerId: "credential" },
-          });
-          if (!account) {
-            await prisma.account.create({
-              data: {
-                accountId: existing.id,
-                providerId: "credential",
-                userId: existing.id,
-                password: hashedPassword,
-              },
-            });
-            seedLog(`Created missing credential account for: ${emp.email}`);
-          }
-        }
+        seedLog(`Created employee: ${emp.email} (${emp.role})`);
       }
     }
   } finally {
