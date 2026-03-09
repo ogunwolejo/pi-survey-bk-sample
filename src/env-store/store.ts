@@ -133,15 +133,14 @@ function setEnvStoreFromEnvironment(): void {
 }
 
 function buildConnectionUrls(): void {
-  const { DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_NAME } = envStore;
-  envStore.DATABASE_URL = `postgresql://${DB_USERNAME}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
+  const { DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_NAME, DATABASE_URL } = envStore;
+  envStore.DATABASE_URL = DATABASE_URL;
   console.log(`[env-store] DATABASE_URL built from components (host: ${DB_HOST})`);
   
-  //   if (!envStore.DATABASE_URL) {
-  //   const { DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_NAME } = envStore;
-  //   envStore.DATABASE_URL = `postgresql://${DB_USERNAME}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
-  //   console.log(`[env-store] DATABASE_URL built from components (host: ${DB_HOST})`);
-  // }
+    if (!envStore.DATABASE_URL) {
+    envStore.DATABASE_URL = `postgresql://${DB_USERNAME}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
+    console.log(`[env-store] DATABASE_URL built from components (host: ${DB_HOST})`);
+  }
 
   if (!envStore.REDIS_URL) {
     const { REDIS_HOST, REDIS_PORT } = envStore;
