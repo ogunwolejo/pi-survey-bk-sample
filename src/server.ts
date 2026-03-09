@@ -15,9 +15,19 @@ import { startEscalationWorker } from "./workers/escalation.worker";
 import { startSiteAccessWorker } from "./workers/site-access.worker";
 import { setSocketServer } from "./lib/socket-emitter";
 import { startPaymentAuditWorker } from "./services/payment-audit.service";
+import { runSeed } from "./seed";
 
 async function bootstrap() {
   await configureEnv();
+
+  // Run database seed on startup
+  try {
+    await runSeed();
+    logger.info("Database seed completed");
+  } catch (err) {
+    logger.error("Database seed failed", { error: String(err) });
+  }
+
   const PORT = parseInt(envStore.PORT, 10);
 
   const io = new SocketServer({

@@ -8,6 +8,7 @@ import "dotenv/config";
 import { spawnSync } from "child_process";
 import { migrationLog, seedLog, appLog, errorLog, successLog } from "./lib/deploy-logger";
 import { envStore, configureEnv } from "./env-store";
+import { runSeed } from "./seed";
 
 async function ensureDatabaseUrl(): Promise<void> {
   await configureEnv();
@@ -64,7 +65,6 @@ async function runSeedPhase(): Promise<void> {
   const start = Date.now();
 
   try {
-    const { runSeed } = await import("./seed");
     await runSeed();
     successLog("Seed", `completed in ${Date.now() - start}ms`);
   } catch (err) {
