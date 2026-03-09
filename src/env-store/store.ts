@@ -81,8 +81,13 @@ function buildConnectionUrls(): void {
   }
 
   if (!envStore.REDIS_URL) {
-    const { REDIS_HOST, REDIS_PORT } = envStore;
-    envStore.REDIS_URL = `redis://${REDIS_HOST}:${REDIS_PORT}`;
+    const { REDIS_HOST, REDIS_PORT, REDIS_URL } = envStore;
+    if(!REDIS_URL) {
+      envStore.REDIS_URL = `redis://${REDIS_HOST}:${REDIS_PORT}`;
+    }
+
+    envStore.REDIS_URL = REDIS_URL;
+    
     console.log(`[env-store] REDIS_URL built from components (host: ${REDIS_HOST})`);
   }
 }
